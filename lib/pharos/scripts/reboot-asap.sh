@@ -12,7 +12,7 @@ sec=$(date +%S)
 tl=""
 
 if [[ "$sec" -lt "56" ]]; then
-  tl=$((60-$sec))
+  tl=$((60-sec))
   minute=$(date +%M | sed 's/^0//')
   ((minute++))
   hour=$(date +%k)
