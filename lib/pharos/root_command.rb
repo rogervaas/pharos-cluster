@@ -2,6 +2,7 @@
 
 require_relative 'up_command'
 require_relative 'reset_command'
+require_relative 'reboot_command'
 require_relative 'version_command'
 require_relative 'kubeconfig_command'
 require_relative 'ssh_command'
@@ -12,7 +13,8 @@ module Pharos
 
     subcommand "up", "initialize/upgrade cluster", UpCommand
     subcommand "kubeconfig", "fetch admin kubeconfig file", KubeconfigCommand
-    subcommand "reset", "reset cluster", ResetCommand
+    subcommand "reset", "reset cluster or nodes", ResetCommand
+    subcommand "reboot", "reboot cluster or nodes", RebootCommand
     subcommand "ssh", "start an ssh session to a server in a pharos cluster", SSHCommand
     subcommand "version", "show version information", VersionCommand
   end
