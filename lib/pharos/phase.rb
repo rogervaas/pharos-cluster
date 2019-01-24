@@ -80,23 +80,10 @@ module Pharos
 
     # @return [Pharos::SSH::Client]
     def master_ssh
-      master_hosts = @config.master_hosts
-      master_host = master_hosts.first
+      master_host = @config.master_host
+      raise "There is no usable master available" unless master_host.master_valid?
 
-      # Select non-self master host when available
-      if master_hosts.size > 1 && master_host == host
-        alt_masters = master_hosts[1..-1].select(&:master_valid?)
-        master_host = alt_masters.first unless alt_masters.empty?
-      end
-
-      master_host.ssh.tap do |ssh|
-        Pharos::Retry.perform(exceptions: Pharos::Phases::RebootHost::EXPECTED_ERRORS) do
-          unless ssh.connected? && ssh.exec?('true')
-            logger.debug { "Reconnecting master ssh" }
-            ssh.connect(timeout: 3)
-          end
-        end
-      end
+      master_host.ssh.tap(&:connect)
     end
 
     # @return [K8s::Client]
