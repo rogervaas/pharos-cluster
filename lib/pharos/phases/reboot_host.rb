@@ -11,7 +11,9 @@ module Pharos
       ].freeze
 
       def call
-        reboot && reconnect && uncordon
+        reboot
+        reconnect
+        uncordon
       end
 
       def reboot
