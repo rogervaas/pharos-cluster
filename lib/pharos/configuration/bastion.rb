@@ -3,8 +3,6 @@
 module Pharos
   module Configuration
     class Bastion < Pharos::Configuration::Struct
-      include Comparable
-
       attr_writer :host
 
       attribute :address, Pharos::Types::Strict::String
