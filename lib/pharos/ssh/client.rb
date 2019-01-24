@@ -8,6 +8,7 @@ require 'monitor'
 module Pharos
   module SSH
     Error = Class.new(StandardError)
+    NotConnected = Class.new(Error)
 
     EXPORT_ENVS = {
       http_proxy: '$http_proxy',
@@ -20,6 +21,16 @@ module Pharos
 
     class Client
       include MonitorMixin
+
+      CONNECTION_RETRY_ERRORS = [
+        Errno::ECONNABORTED,
+        Errno::ECONNREFUSED,
+        Errno::ECONNRESET,
+        IOError,
+        Net::SSH::ConnectionTimeout,
+        Net::SSH::Disconnect,
+        Net::SSH::Exception
+      ].freeze
 
       attr_reader :session, :host
 
@@ -48,23 +59,24 @@ module Pharos
       # @param options [Hash] see Net::SSH#start
       def connect(**options)
         synchronize do
-          logger.debug { "connect: #{@user}@#{@host} (#{@opts})" }
-          if bastion
-            gw_opts = {}
-            gw_opts[:keys] = [bastion.ssh_key_path] if bastion.ssh_key_path
-            gateway = Net::SSH::Gateway.new(bastion.address, bastion.user, gw_opts)
-            @session = gateway.ssh(@host, @user, @opts.merge(options))
-          else
-            @session = Net::SSH.start(@host, @user, @opts.merge(options))
+          Pharos::Retry.perform(10, exceptions: CONNECTION_RETRY_ERRORS) do
+            logger.debug { "connect: #{@user}@#{@host} (#{@opts})" }
+            if bastion
+              @session = bastion.host.ssh.gateway.ssh(@host, @user, @opts.merge(options))
+            else
+              @session = Net::SSH.start(@host, @user, @opts.merge(options))
+            end
           end
         end
       end
 
-      # @param host [String]
-      # @param port [Integer]
-      # @return [Integer] local port number
-      def gateway(host, port)
-        Net::SSH::Gateway.new(@host, @user, @opts).open(host, port)
+      # @return [Net::SSH::Gateway]
+      def gateway
+        @gateway ||= Net::SSH::Gateway.new(@host, @user, @opts).tap do |gw|
+          gw.instance_exec do
+            @thread.report_on_exception = false
+          end
+        end
       end
 
       # @example
@@ -134,17 +146,33 @@ module Pharos
       end
 
       def connected?
-        synchronize { @session && !@session.closed? }
+        synchronize { !session.nil? && !session.closed? }
+      end
+
+      def gateway_shutdown
+        synchronize do
+          return unless @gateway
+          @gateway.shutdown!
+          sleep 0.1 until !@gateway.active?
+          @gateway = nil
+        end
       end
 
       def disconnect
-        synchronize { @session.close if @session && !@session.closed? }
+        synchronize do
+          session.close if session && !session.closed?
+          bastion.host.ssh.gateway_shutdown if bastion
+          gateway_shutdown
+          @session = nil
+        end
       end
 
       private
 
       def require_session!
-        raise Error, "Connection not established" if @session.nil? || @session.closed?
+        connect(timeout: 3) unless connected?
+      rescue *CONNECTION_RETRY_ERRORS => ex
+        raise NotConnected, "Connection not established (#{ex.class.name} : #{ex.message})" unless connected?
       end
     end
   end

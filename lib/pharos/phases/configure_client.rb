@@ -18,8 +18,6 @@ module Pharos
         return if @optional && !kubeconfig?
 
         cluster_context['kubeconfig'] = kubeconfig
-        cluster_context['master-ssh'] = ssh
-
         client_prefetch unless @optional
       end
 

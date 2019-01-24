@@ -42,10 +42,7 @@ module Pharos
     end
 
     def cluster_manager
-      @cluster_manager ||= ClusterManager.new(load_config, pastel: pastel).tap do |cluster_manager|
-        cluster_manager.load
-      end
+      @cluster_manager ||= ClusterManager.new(load_config, pastel: pastel).tap(&:load)
     end
   end
 end
-

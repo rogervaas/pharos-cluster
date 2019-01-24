@@ -94,7 +94,7 @@ module Pharos
       end
 
       def ssh?
-        @ssh && !@ssh.session.closed?
+        @ssh && @ssh.connected?
       end
 
       def api_address
@@ -186,6 +186,10 @@ module Pharos
         else
           2
         end
+      end
+
+      def master_valid?
+        master_sort_score.zero?
       end
 
       # @return [Integer]

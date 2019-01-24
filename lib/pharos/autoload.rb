@@ -47,6 +47,9 @@ module Pharos
 
   module SSH
     autoload :Client, 'pharos/ssh/client'
+    autoload :Error, 'pharos/ssh/client'
+    autoload :NotConnected, 'pharos/ssh/client'
+    autoload :Error, 'pharos/ssh/client'
     autoload :RemoteCommand, 'pharos/ssh/remote_command'
     autoload :RemoteFile, 'pharos/ssh/remote_file'
     autoload :Tempfile, 'pharos/ssh/tempfile'

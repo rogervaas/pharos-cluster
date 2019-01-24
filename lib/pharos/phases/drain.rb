@@ -6,10 +6,10 @@ module Pharos
       title "Drain node"
 
       def call
-        logger.info { "draining ..." }
+        logger.info "Draining ..."
         master_ssh.exec!("kubectl drain --grace-period=120 --force --timeout=5m --ignore-daemonsets --delete-local-data #{@host.hostname}")
       rescue Pharos::SSH::RemoteCommand::ExecError => ex
-        logger.error { "failed to drain node: #{ex.message}" }
+        logger.error "Failed to drain node: #{ex.message}"
       end
     end
   end

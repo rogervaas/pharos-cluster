@@ -115,6 +115,12 @@ module Pharos
     end
 
     # @param hosts [Array<Pharos::Configuration::Host>]
+    def apply_reboot_hosts(hosts, parallel: true)
+      apply_phase(Phases::Drain, hosts, parallel: parallel) if config.master_hosts.any?(&:master_valid?)
+      apply_phase(Phases::RebootHost, hosts, parallel: parallel)
+    end
+
+    # @param hosts [Array<Pharos::Configuration::Host>]
     def apply_reset_hosts(hosts)
       master_hosts = config.master_hosts
       if master_hosts.first.master_sort_score.zero?
