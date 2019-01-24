@@ -14,7 +14,7 @@ module Pharos
       end
 
       def host
-        @host ||= Host.new(address: address, user: user, ssh_key_path: ssh_key_path)
+        @host || self.host = Host.new(address: address, user: user, ssh_key_path: ssh_key_path)
       end
     end
   end
