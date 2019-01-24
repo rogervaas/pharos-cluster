@@ -61,11 +61,11 @@ module Pharos
         synchronize do
           Pharos::Retry.perform(10, exceptions: CONNECTION_RETRY_ERRORS) do
             logger.debug { "connect: #{@user}@#{@host} (#{@opts})" }
-            if bastion
-              @session = bastion.host.ssh.gateway.ssh(@host, @user, @opts.merge(options))
-            else
-              @session = Net::SSH.start(@host, @user, @opts.merge(options))
-            end
+            @session = if bastion
+                         bastion.host.ssh.gateway.ssh(@host, @user, @opts.merge(options))
+                       else
+                         Net::SSH.start(@host, @user, @opts.merge(options))
+                       end
           end
         end
       end
@@ -152,6 +152,7 @@ module Pharos
       def gateway_shutdown
         synchronize do
           return unless @gateway
+
           @gateway.shutdown!
           sleep 0.1 until !@gateway.active?
           @gateway = nil
