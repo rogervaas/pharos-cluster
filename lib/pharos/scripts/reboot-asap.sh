@@ -19,6 +19,9 @@ if [[ "$sec" -lt "56" ]]; then
   if [[ "$minute" -eq "60" ]]; then
     minute="0"
     ((hour++))
+    if [[ "$hour" -eq "24" ]]; then
+      hour="0"
+    fi
   fi
   ts=$(printf "%02d:%02d\\n" "$hour" "$minute")
 else
