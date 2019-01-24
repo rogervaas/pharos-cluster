@@ -33,6 +33,7 @@ module Pharos
         end
 
         cluster_context['master-certs'] = pull_kube_certs unless cluster_context['master-certs']
+        host.checks['kubelet_configured'] = true
       end
 
       def install
@@ -90,6 +91,7 @@ module Pharos
           ssh.file(path).write(contents)
           ssh.exec!("sudo chmod 0400 #{path}")
         end
+        host.checks['ca_exists'] = true
       end
 
       # @return [Hash] path => PEM data
@@ -99,6 +101,7 @@ module Pharos
           path = File.join(KUBE_DIR, 'pki', file)
           certs[file] = ssh.file(path).read
         end
+        host.checks['ca_exists'] = certs.key?('ca.key')
         certs
       end
 

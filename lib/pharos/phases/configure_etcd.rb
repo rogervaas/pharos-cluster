@@ -21,6 +21,7 @@ module Pharos
           PEER_NAME: peer_name(@host),
           ARCH: @host.cpu_arch.name
         )
+        host.checks['etcd_ca_exists'] = true
 
         logger.info { 'Configuring etcd ...' }
         exec_script(
