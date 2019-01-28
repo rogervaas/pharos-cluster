@@ -75,6 +75,7 @@ module Pharos
       master_hosts = config.master_hosts
       apply_phase(Phases::MigrateMaster, master_hosts, parallel: true)
       apply_phase(Phases::ConfigureHost, config.hosts, master: master_hosts.first, parallel: true)
+      apply_phase(Phases::ConfigureFirewalld, config.hosts, parallel: true)
       apply_phase(Phases::ConfigureClient, [master_hosts.first], master: master_hosts.first, parallel: false, optional: true)
 
       unless @config.etcd&.endpoints
@@ -92,6 +93,7 @@ module Pharos
       apply_phase(Phases::MigrateWorker, config.worker_hosts, parallel: true, master: master_hosts.first)
       apply_phase(Phases::ConfigureKubelet, config.hosts, parallel: true)
 
+      apply_phase(Phases::PullMasterImages, master_hosts, parallel: true)
       apply_phase(Phases::ConfigureMaster, master_hosts, parallel: false)
       apply_phase(Phases::ConfigureClient, [master_hosts.first], master: master_hosts.first, parallel: false)
 
