@@ -29,9 +29,6 @@ module Pharos
         cluster_manager.apply_reboot_hosts(master_hosts, parallel: false)
       end
 
-      puts pastel.green("==> Resharpening tools ...")
-      cluster_manager.gather_facts # again
-
       unless worker_hosts.empty?
         puts pastel.green("==> Rebooting #{worker_hosts.size} worker node#{'s' if worker_hosts.size > 1} ...")
         cluster_manager.apply_reboot_hosts(worker_hosts, parallel: true)
