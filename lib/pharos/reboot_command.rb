@@ -11,18 +11,27 @@ module Pharos
     end
 
     def reboot_all
-      confirm_yes!(pastel.bright_yellow("==> Do you really want to reboot all hosts in the cluster?"), default: false)
+      confirm_yes!(pastel.bright_yellow("==> Do you really want to reboot all of the hosts in the cluster?"), default: false)
       reboot_hosts
     end
 
     def reboot_hosts
       start_time = Time.now
 
-      master_hosts = filtered_hosts.select(&:master?)
-      worker_hosts = filtered_hosts.select(&:worker?)
+      master_hosts = filtered_hosts.select(&:master?).reject(&:local?)
+      worker_hosts = filtered_hosts.select(&:worker?).reject(&:local?)
+      local_hosts  = filtered_hosts.select(&:local?)
 
       puts pastel.green("==> Sharpening tools ...")
       cluster_manager.gather_facts
+
+      unless local_hosts.empty?
+        puts "  " + pastel.red("!" * 76)
+        puts pastel.red("    The host will remain cordoned (workloads will not be scheduled on it) after the reboot")
+        puts pastel.red("    To uncordon, you must use: ") + pastel.cyan("pharos exec -c #{config_yaml.filename} -r master -f -- kubectl uncordon #{local_hosts.first}")
+        puts "  " + pastel.red("!" * 76)
+        confirm_yes!(pastel.bright_yellow("Host #{local_hosts.first} is localhost. It will remain cordoned after reboot. Are you sure?"), default: false)
+      end
 
       unless master_hosts.empty?
         puts pastel.green("==> Rebooting #{master_hosts.size} master node#{'s' if master_hosts.size > 1} ...")
@@ -32,6 +41,12 @@ module Pharos
       unless worker_hosts.empty?
         puts pastel.green("==> Rebooting #{worker_hosts.size} worker node#{'s' if worker_hosts.size > 1} ...")
         cluster_manager.apply_reboot_hosts(worker_hosts, parallel: true)
+      end
+
+      unless local_hosts.empty?
+        puts pastel.green("==> Rebooting localhost")
+
+        cluster_manager.apply_reboot_hosts(local_hosts, parallel: false)
       end
 
       reboot_time = Time.now - start_time

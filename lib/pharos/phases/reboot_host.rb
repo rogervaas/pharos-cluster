@@ -5,15 +5,18 @@ module Pharos
     class RebootHost < Pharos::Phase
       title "Reboot hosts"
 
-      EXPECTED_ERRORS = Pharos::SSH::Client::CONNECTION_RETRY_ERRORS + [
-        Pharos::SSH::NotConnected,
-        Pharos::SSH::RemoteCommand::ExecError
+      EXPECTED_ERRORS = Pharos::Transport::SSH::RETRY_CONNECTION_ERRORS + [
+        Pharos::ExecError
       ].freeze
 
       def call
-        reboot
-        reconnect
-        uncordon
+        if host.local?
+          reboot
+          reconnect
+          uncordon
+        else
+          host.transport.exec!("sudo shutdown -r now")
+        end
       end
 
       def reboot
@@ -29,7 +32,7 @@ module Pharos
       def reconnect
         logger.info "Reconnecting and waiting for kubelet to start .."
         Pharos::Retry.perform(exceptions: EXPECTED_ERRORS) do
-          ssh.connect(timeout: 3) unless ssh.connected?
+          ssh.connect unless ssh.connected?
           ssh.exec!('systemctl is-active kubelet')
         end
         logger.debug { "Connected" }

@@ -37,11 +37,6 @@ module Pharos
       config.hosts.each do |host|
         host.api_endpoint = config.api&.endpoint
         host.config = config
-        # map bastion.host to an existing host
-        if host.bastion
-          configuration_host = config.hosts.find { |cfg_host| host.bastion == cfg_host }
-          host.bastion.host = configuration_host if configuration_host
-        end
       end
 
       config
