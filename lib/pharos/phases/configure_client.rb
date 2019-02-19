@@ -18,17 +18,18 @@ module Pharos
         return if @optional && !kubeconfig?
 
         cluster_context['kubeconfig'] = kubeconfig
+
         client_prefetch unless @optional
       end
 
       # @return [String]
       def kubeconfig?
-        ssh.file(REMOTE_FILE).exist?
+        transport.file(REMOTE_FILE).exist?
       end
 
       # @return [K8s::Config]
       def read_kubeconfig
-        ssh.file(REMOTE_FILE).read
+        transport.file(REMOTE_FILE).read
       end
 
       # @return [K8s::Config]

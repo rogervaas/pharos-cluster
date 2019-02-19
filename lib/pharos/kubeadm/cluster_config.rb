@@ -4,13 +4,17 @@ module Pharos
   module Kubeadm
     class ClusterConfig
       PHAROS_DIR = Pharos::Kubeadm::PHAROS_DIR
+      CA_FILE = '/etc/kubernetes/pki/ca.crt'
       AUTHENTICATION_TOKEN_WEBHOOK_CONFIG_DIR = '/etc/kubernetes/authentication'
+      OIDC_CONFIG_DIR = '/etc/kubernetes/authentication'
       AUDIT_CFG_DIR = (PHAROS_DIR + '/audit').freeze
       SECRETS_CFG_DIR = (PHAROS_DIR + '/secrets-encryption').freeze
       SECRETS_CFG_FILE = (SECRETS_CFG_DIR + '/config.yml').freeze
       CLOUD_CFG_DIR = (PHAROS_DIR + '/cloud').freeze
       CLOUD_CFG_FILE = (CLOUD_CFG_DIR + '/cloud-config').freeze
-      DEFAULT_ADMISSION_PLUGINS = %w(PodSecurityPolicy NodeRestriction).freeze
+      DEFAULT_ADMISSION_PLUGINS = %w(PodSecurityPolicy NodeRestriction AlwaysPullImages NamespaceLifecycle ServiceAccount).freeze
+      # CIS compliat TLS ciphers
+      TLS_CIPHERS = 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256'
 
       # @param config [Pharos::Config] cluster config
       # @param host [Pharos::Configuration::Host] master host-specific config
@@ -32,9 +36,20 @@ module Pharos
             'podSubnet' => @config.network.pod_network_cidr
           },
           'controlPlaneEndpoint' => 'localhost:6443', # client-side loadbalanced kubelets
-          'apiServerExtraArgs' => {},
+          'apiServerExtraArgs' => {
+            'profiling' => 'false', # CIS 1.1.8
+            'kubelet-certificate-authority' => CA_FILE,
+            'repair-malformed-updates' => 'false', # CIS 1.1.9
+            'tls-cipher-suites' => TLS_CIPHERS, # CIS 1.1.30
+            'service-account-lookup' => 'true' # CIS 1.1.23
+          },
           'controllerManagerExtraArgs' => {
-            'horizontal-pod-autoscaler-use-rest-clients' => 'true'
+            'horizontal-pod-autoscaler-use-rest-clients' => 'true',
+            'profiling' => 'false', # CIS 1.2.1
+            'terminated-pod-gc-threshold' => '1000' # CIS 1.3.1
+          },
+          'schedulerExtraArgs' => {
+            'profiling' => 'false' # CIS 1.3.2
           }
         }
 
@@ -71,6 +86,8 @@ module Pharos
 
         # Only if authentication token webhook option are given
         configure_token_webhook(config) if @config.authentication&.token_webhook
+        # Only if authentication oidc options are given
+        configure_oidc(config) if @config.authentication&.oidc
 
         # Configure audit related things if needed
         configure_audit_webhook(config) if @config.audit&.webhook&.server
@@ -107,9 +124,9 @@ module Pharos
             'endpoints' => @config.etcd_hosts.map { |h|
               "https://#{@config.etcd_peer_address(h)}:2379"
             },
-            'certFile'  => '/etc/pharos/pki/etcd/client.pem',
-            'caFile'    => '/etc/pharos/pki/ca.pem',
-            'keyFile'   => '/etc/pharos/pki/etcd/client-key.pem'
+            'certFile' => '/etc/pharos/pki/etcd/client.pem',
+            'caFile' => '/etc/pharos/pki/ca.pem',
+            'keyFile' => '/etc/pharos/pki/etcd/client-key.pem'
           }
         }
       end
@@ -142,6 +159,22 @@ module Pharos
         config['apiServerExtraVolumes'] += volume_mounts_for_audit_config
       end
 
+      # @param config [Hash]
+      def configure_oidc(config)
+        config['apiServerExtraArgs'].merge!(
+          'oidc-issuer-url' => @config.authentication.oidc.issuer_url,
+          'oidc-client-id' => @config.authentication.oidc.client_id
+        )
+        # These are optional in config, so set conditionally
+        config['apiServerExtraArgs']['oidc-username-claim'] = @config.authentication.oidc.username_claim if @config.authentication.oidc.username_claim
+        config['apiServerExtraArgs']['oidc-username-prefix'] = @config.authentication.oidc.username_prefix if @config.authentication.oidc.username_prefix
+        config['apiServerExtraArgs']['oidc-groups-claim'] = @config.authentication.oidc.groups_claim if @config.authentication.oidc.groups_claim
+        config['apiServerExtraArgs']['oidc-groups-prefix'] = @config.authentication.oidc.groups_prefix if @config.authentication.oidc.groups_prefix
+        config['apiServerExtraArgs']['oidc-ca-file'] = OIDC_CONFIG_DIR + '/oidc_ca.crt' if @config.authentication.oidc.ca_file
+
+        config['apiServerExtraVolumes'] += volume_mounts_for_authentication_oidc if @config.authentication.oidc.ca_file
+      end
+
       # @return [Array<Hash>]
       def volume_mounts_for_audit_config
         volume_mounts = []
@@ -171,6 +204,17 @@ module Pharos
           'name' => 'k8s-auth-token-webhook',
           'hostPath' => AUTHENTICATION_TOKEN_WEBHOOK_CONFIG_DIR,
           'mountPath' => AUTHENTICATION_TOKEN_WEBHOOK_CONFIG_DIR
+        }
+        volume_mounts << volume_mount
+        volume_mounts
+      end
+
+      def volume_mounts_for_authentication_oidc
+        volume_mounts = []
+        volume_mount = {
+          'name' => 'k8s-auth-oidc',
+          'hostPath' => OIDC_CONFIG_DIR,
+          'mountPath' => OIDC_CONFIG_DIR
         }
         volume_mounts << volume_mount
         volume_mounts

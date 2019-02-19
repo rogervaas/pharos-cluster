@@ -20,10 +20,12 @@ module Pharos
             'webhook' => {
               'enabled' => true
             }
-          }
+          },
+          'serverTLSBootstrap' => true,
+          'tlsCipherSuites' => ClusterConfig::TLS_CIPHERS.split(',')
         }
         if @config.kubelet&.read_only_port
-          config['readOnlyPort'] = '10255'
+          config['readOnlyPort'] = 10_255
         end
 
         config

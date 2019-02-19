@@ -24,16 +24,14 @@ module Pharos
 
     # @param host [Pharos::Configuration::Host]
     # @param config [Pharos::Config]
-    # @param master [Pharos::Configuration::Host]
-    def initialize(host, config: nil, master: nil, cluster_context: nil)
+    def initialize(host, config: nil, cluster_context: nil)
       @host = host
       @config = config
-      @master = master
       @cluster_context = cluster_context
     end
 
-    def ssh
-      @host.ssh
+    def transport
+      @host.transport
     end
 
     def logger
@@ -59,7 +57,7 @@ module Pharos
     # @param script [String] name of file under ../scripts/
     # @param vars [Hash]
     def exec_script(script, vars = {})
-      ssh.exec_script!(
+      transport.exec_script!(
         script,
         env: vars,
         path: script_path(script)
@@ -78,12 +76,9 @@ module Pharos
       @host_configurer ||= @host.configurer
     end
 
-    # @return [Pharos::SSH::Client]
-    def master_ssh
-      master_host = @config.master_host
-      raise "There is no usable master available" unless master_host.master_valid?
-
-      master_host.ssh.tap(&:connect)
+    # @return [Pharos::Configuration::Host]
+    def master_host
+      @config.master_host
     end
 
     # @return [K8s::Client]

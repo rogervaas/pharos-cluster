@@ -7,6 +7,7 @@ module Pharos
     class Network < Pharos::Configuration::Struct
       class Weave < Pharos::Configuration::Struct
         attribute :trusted_subnets, Pharos::Types::Array.of(Pharos::Types::String)
+        attribute :no_masq_local, Pharos::Types::Strict::Bool.default(false)
 
         # @param routes [Array<Pharos::Configuration::Host::Routes>]
         # @return [Array<Pharos::Configuration::Host::Routes>]
@@ -20,6 +21,7 @@ module Pharos
       class Calico < Pharos::Configuration::Struct
         attribute :ipip_mode, Pharos::Types::String.default('Always')
         attribute :nat_outgoing, Pharos::Types::Strict::Bool.default(true)
+        attribute :environment, Pharos::Types::Hash.default({})
 
         # @param routes [Array<Pharos::Configuration::Host::Routes>]
         # @return [Array<Pharos::Configuration::Host::Routes>]
