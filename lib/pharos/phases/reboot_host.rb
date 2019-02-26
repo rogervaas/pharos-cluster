@@ -11,11 +11,11 @@ module Pharos
 
       def call
         if host.local?
+          host.transport.exec!("sudo shutdown -r now")
+        else
           reboot
           reconnect
           uncordon
-        else
-          host.transport.exec!("sudo shutdown -r now")
         end
       end
 
