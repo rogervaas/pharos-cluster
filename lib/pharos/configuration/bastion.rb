@@ -7,7 +7,8 @@ module Pharos
       attribute :user, Pharos::Types::Strict::String
       attribute :ssh_key_path, Pharos::Types::Strict::String
       attribute :ssh_port, Pharos::Types::Strict::Integer.default(22)
-      attribute :ssh_proxy_command, Pharos::Types::Strict::String
+
+      attr_writer :host
 
       def host
         @host ||= Host.new(attributes)
