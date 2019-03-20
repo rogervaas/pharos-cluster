@@ -42,7 +42,9 @@ module Pharos
 
         if host_a == host_b
           raise Pharos::ConfigError, 'hosts' => { config.hosts.index(host_a) => ["host and its bastion point to the same address and port (#{host_a.address}:#{host_a.ssh_port})"] }
-        elsif host_b.bastion
+        end
+
+        if host_b.bastion
           raise Pharos::ConfigError, 'hosts' => { config.hosts.index(host_a) => ["multi-hop bastion not supported (#{host_a.address}:#{host_a.ssh_port} -> #{host_a.bastion.address}:#{host_a.bastion.ssh_port} -> #{host_b.bastion.address}:#{host_b.bastion.ssh_port}"] }
         end
       end
