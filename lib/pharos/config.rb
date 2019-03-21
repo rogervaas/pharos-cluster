@@ -34,7 +34,7 @@ module Pharos
       config.data = raw_data.freeze
 
       config.hosts.reject { |h| h.bastion.nil? }.each do |host_a|
-        host_b = config.hosts.find { |host| host_a.bastion.attributes.all? { |k, v| host.attributes[k] == v } }
+        host_b = config.hosts.find { |host| host_a.bastion.attributes_match?(host.attributes) }
         next unless host_b
 
         # Creating a new Pharos::Configuration::Bastion entry because otherwise it's an anonymous class
