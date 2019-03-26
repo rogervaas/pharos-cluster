@@ -79,7 +79,6 @@ module Pharos
       apply_phase(Phases::ConfigureClient, parallel: false, optional: true)
 
       unless @config.etcd&.endpoints
-        etcd_hosts = config.etcd_hosts
         apply_phase(Phases::ConfigureCfssl, parallel: true)
         apply_phase(Phases::ConfigureEtcdCa, parallel: false)
         apply_phase(Phases::ConfigureEtcdChanges, parallel: false)
@@ -169,7 +168,6 @@ module Pharos
     end
 
     def save_config
-      master_host = config.master_host
       apply_phase(Phases::StoreClusterConfiguration)
     end
 
