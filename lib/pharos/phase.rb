@@ -29,7 +29,7 @@ module Pharos
     def self.on(*hosts)
       return @on if @on
       return [:hosts] if hosts.empty?
-      
+
       @on = hosts.flatten.compact
     end
 
