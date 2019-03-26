@@ -5,6 +5,8 @@ module Pharos
     class ConfigureClient < Pharos::Phase
       title "Configure kube client"
 
+      on :master_host
+
       REMOTE_FILE = "/etc/kubernetes/admin.conf"
 
       # @param optional [Boolean] skip if kubeconfig does not exist instead of failing

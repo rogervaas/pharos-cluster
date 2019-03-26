@@ -5,6 +5,8 @@ module Pharos
     class ConfigureCustomNetwork < Pharos::Phase
       title "Configure Custom network"
 
+      on :master_host
+
       def call
         logger.info { "Configuring custom network ..." }
         stack = Pharos::Kube.stack('custom-network', @config.network.custom.manifest_path, name: 'custom_network', cluster_config: @config)
