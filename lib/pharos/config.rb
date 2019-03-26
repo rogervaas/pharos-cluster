@@ -106,7 +106,7 @@ module Pharos
     end
 
     def local_host
-      @local_host ||= hosts.select(&:local?).first || Pharos::Configuration::Host.new(address: '127.0.0.1')
+      @local_host ||= hosts.select(&:local?).first || Pharos::Configuration::Host.new(address: '127.0.0.1').tap { |h| h.hostname = ENV['HOST'] || 'localhost' }
     end
 
     def remote_hosts
