@@ -17,6 +17,7 @@ module Pharos
       def call
         return if @optional && !kubeconfig?
 
+        transport.close(cluster_context['kube_client'].transport.server[/:(\d+)/, 1].to_i) if cluster_context['kube_client']
         cluster_context['kube_client'] = Pharos::Kube.client('localhost', k8s_config, transport.forward(host.api_address, 6443))
 
         client_prefetch unless @optional
