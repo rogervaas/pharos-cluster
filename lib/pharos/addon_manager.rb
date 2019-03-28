@@ -111,16 +111,11 @@ module Pharos
       end
     end
 
-    # @return [K8s::Client]
-    def kube_client
-      @cluster_context['kube_client'] || raise("Kubeclient not configured")
-    end
-
     def options
       {
-        kube_client: kube_client,
         cpu_arch: @config.master_host.cpu_arch, # needs to be resolved *after* Phases::ValidateHost runs
-        cluster_config: @config
+        cluster_config: @config,
+        cluster_context: @cluster_context
       }
     end
 
