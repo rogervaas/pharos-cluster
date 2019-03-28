@@ -113,10 +113,7 @@ module Pharos
 
     # @return [K8s::Client]
     def kube_client
-      if !@kubeclient && @cluster_context['kubeconfig']
-        @kube_client = @config.kube_client(@cluster_context['kubeconfig'])
-      end
-      @kube_client
+      @cluster_context['kube_client'] || raise("Kubeclient not configured")
     end
 
     def options

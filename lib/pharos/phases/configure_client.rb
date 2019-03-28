@@ -17,25 +17,24 @@ module Pharos
       def call
         return if @optional && !kubeconfig?
 
-        cluster_context['kubeconfig'] = kubeconfig
+        cluster_context['kube_client'] = Pharos::Kube.client('localhost', k8s_config, master_host.transport.forward(master_host.api_address, 6443))
 
         client_prefetch unless @optional
       end
 
+      def kubeconfig
+        @kubeconfig ||= transport.file(REMOTE_FILE)
+      end
+
       # @return [String]
       def kubeconfig?
-        transport.file(REMOTE_FILE).exist?
+        kubeconfig.exist?
       end
 
       # @return [K8s::Config]
-      def read_kubeconfig
-        transport.file(REMOTE_FILE).read
-      end
-
-      # @return [K8s::Config]
-      def kubeconfig
+      def k8s_config
         logger.info { "Fetching kubectl config ..." }
-        config = YAML.safe_load(read_kubeconfig)
+        config = YAML.safe_load(kubeconfig.read)
 
         logger.debug { "New config: #{config}" }
         K8s::Config.new(config)
