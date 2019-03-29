@@ -7,6 +7,10 @@ module Pharos
         raise TypeError, "Non-SSH connections do not provide port forwarding"
       end
 
+      def close(*args)
+        raise TypeError, "Non-SSH connections do not provide port forwarding"
+      end
+
       def connect(**_options)
         nil
       end
